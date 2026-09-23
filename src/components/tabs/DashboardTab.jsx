@@ -87,7 +87,7 @@ export const DashboardTab = ({ onSelectTab, toggleAIDrawer }) => {
         tabId="dashboard" 
         tabName="Dashboard & Farm Overview" 
         contextData={{
-          user: user?.displayName || 'Sathya Seelan',
+          user: user?.displayName || 'Farmer',
           location: user?.farmLocation || 'Vellore, Tamil Nadu',
           farm_health: "Good",
           weather: `${weatherCondition} (${weatherTemp}°C)`,
@@ -108,7 +108,7 @@ export const DashboardTab = ({ onSelectTab, toggleAIDrawer }) => {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-100 tracking-tight flex items-center gap-2">
-              {greeting}, {user?.displayName || 'Sathya Seelan'}! 🌿
+              {greeting}, {user?.displayName || 'Farmer'}! 🌿
             </h2>
             <p className="text-xs md:text-sm text-slate-300 mt-1 font-medium">
               Your smart farm is ready for today.

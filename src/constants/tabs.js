@@ -36,7 +36,7 @@ export const TAB_CATEGORIES = [
 ];
 
 export const MOCK_USER = {
-  name: 'Sathya Seelan',
+  name: 'Farmer',
   title: 'Premium Farmer',
   badge: '👑 Elite Tier',
   location: 'Vellore, Tamil Nadu',

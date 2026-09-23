@@ -611,7 +611,7 @@ export async function runTabAIAnalysis(tabId, tabName, contextData = {}, customP
 
 export async function queryLocalOllama(prompt, model = 'qwen:latest', systemContext = '') {
   try {
-    const response = await fetch('/api/backend/chat', {
+    const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, context: systemContext })

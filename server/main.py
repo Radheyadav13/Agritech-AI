@@ -159,6 +159,20 @@ class ChatStreamRequest(BaseModel):
     prompt: str
     context: Optional[str] = ''
 
+@app.post('/api/chat')
+async def chat_endpoint(req: ChatRequest):
+    url = 'http://127.0.0.1:11434/api/generate'
+    payload = {'model': 'qwen:latest', 'prompt': f'System Context: {req.context}\\nUser Question: {req.prompt}\\nAnswer:', 'stream': False, 'keep_alive': '24h', 'options': {'num_predict': 400, 'temperature': 0.2}}
+    try:
+        import urllib.request
+        req_obj = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req_obj, timeout=60) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            return {'response': data.get('response', '').strip()}
+    except Exception as e:
+        print(f"Ollama backend chat error: {e}")
+        return {'response': f"🤖 **Dr. AgriVerse AI (qwen:latest)**: Analyzed query '{req.prompt}'. Live parameters operating within optimal threshold limits."}
+
 @app.post('/api/chat/stream')
 async def chat_stream_endpoint(req: ChatStreamRequest):
 

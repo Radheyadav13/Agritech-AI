@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import {
   CloudSun, Wind, Thermometer, CloudRain, Sun, Calendar, Eye, CheckCircle2,
   FileText, Download, History, Search, MapPin, Gauge, Umbrella, Compass, Radio,
@@ -12,117 +13,26 @@ import {
 } from '../../services/weatherService';
 import { exportPDFReport, exportWordDocReport, exportTextReport } from '../../utils/exportReport';
 
-// 3D EARTH GLOBE CANVAS COMPONENT
-const InteractiveEarthGlobe = ({ activeLayer }) => {
-  const canvasRef = useRef(null);
-  const [rotation, setRotation] = useState(0);
+const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animId;
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const cx = canvas.width / 2;
-      const cy = canvas.height / 2;
-      const r = Math.min(cx, cy) - 25;
-
-      // Atmosphere Glow
-      const grad = ctx.createRadialGradient(cx, cy, r - 5, cx, cy, r + 20);
-      grad.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
-      grad.addColorStop(0.5, 'rgba(16, 185, 129, 0.2)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r + 20, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Globe Base
-      ctx.fillStyle = '#060d1a';
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Earth Outline
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Lat/Lon Grids
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
-      ctx.lineWidth = 1;
-      for (let i = -r + 20; i < r; i += 30) {
-        ctx.beginPath();
-        ctx.ellipse(cx, cy + i/2, Math.sqrt(r*r - i*i), 15, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Rotating Continent Polygons
-      ctx.fillStyle = '#10b981';
-      ctx.globalAlpha = 0.35;
-      const rotRad = (rotation * Math.PI) / 180;
-      for (let k = 0; k < 5; k++) {
-        const angle = rotRad + (k * Math.PI / 2.5);
-        const bx = cx + Math.cos(angle) * (r * 0.55);
-        const by = cy + Math.sin(angle) * (r * 0.25);
-        ctx.beginPath();
-        ctx.arc(bx, by, 22, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1.0;
-
-      // Weather Satellite Orbit
-      ctx.strokeStyle = '#f59e0b';
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r + 12, r * 0.4, Math.PI / 6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Satellite Dot
-      const satAngle = rotRad * 1.5;
-      const sx = cx + Math.cos(satAngle) * (r + 12);
-      const sy = cy + Math.sin(satAngle) * (r * 0.4);
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(sx, sy, 4.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Vellore Location Pin
-      const pinX = cx + 15;
-      const pinY = cy - 10;
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(pinX, pinY, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      const pulseR = 6 + (Math.sin(rotRad * 5) + 1) * 4;
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(pinX, pinY, pulseR, 0, Math.PI * 2);
-      ctx.stroke();
-
-      setRotation(prev => (prev + 0.5) % 360);
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-    return () => cancelAnimationFrame(animId);
-  }, [rotation]);
+const FarmMap = ({ location, satellite = false, radarTimestamp }) => {
+  const position = [location.lat, location.lon];
+  const radarUrl = radarTimestamp
+    ? `https://tilecache.rainviewer.com/v2/radar/${radarTimestamp}/256/{z}/{x}/{y}/2/1_1.png`
+    : null;
 
   return (
-    <div className="relative flex items-center justify-center h-80 w-full overflow-hidden bg-black/60 rounded-2xl border border-white/10">
-      <canvas ref={canvasRef} width={420} height={300} className="max-w-full" />
-      <div className="absolute top-3 left-3 bg-black/80 px-3 py-1.5 rounded-xl text-[10px] text-emerald-300 font-mono border border-emerald-500/40">
-        📡 Orbit: <strong className="text-amber-300">NOAA-19 / Sentinel-3</strong> • Active Layer: <strong className="text-cyan-300">{activeLayer}</strong>
-      </div>
-      <div className="absolute bottom-3 right-3 bg-black/80 px-3 py-1 rounded-xl text-[10px] text-slate-400 font-mono border border-white/10">
-        Vellore Ground Radar Pin: 12.9165° N, 79.1325° E
-      </div>
-    </div>
+    <MapContainer center={position} zoom={satellite ? 13 : 8} scrollWheelZoom className="h-full w-full" aria-label={`${location.name} weather map`}>
+      <TileLayer
+        url={satellite ? SATELLITE_URL : OSM_URL}
+        attribution={satellite ? '&copy; Esri, Maxar, Earthstar Geographics' : '&copy; OpenStreetMap contributors'}
+      />
+      {radarUrl && <TileLayer url={radarUrl} opacity={0.7} zIndex={10} />}
+      <CircleMarker center={position} radius={9} pathOptions={{ color: '#fbbf24', fillColor: '#ef4444', fillOpacity: 0.9, weight: 2 }}>
+        <Popup><strong>{location.name}</strong><br />Selected farm location</Popup>
+      </CircleMarker>
+    </MapContainer>
   );
 };
 
@@ -135,6 +45,7 @@ export const LiveWeatherTab = () => {
 
   // Active GIS Layer
   const [activeLayer, setActiveLayer] = useState('Radar');
+  const [radarTimestamp, setRadarTimestamp] = useState(null);
 
   // AI Advisor Chat
   const [chatPrompt, setChatPrompt] = useState('');
@@ -144,6 +55,21 @@ export const LiveWeatherTab = () => {
 
   useEffect(() => {
     loadClimateTrends();
+  }, []);
+
+  // RainViewer publishes its most recent radar frame without requiring an API key.
+  useEffect(() => {
+    const loadRadarFrame = async () => {
+      try {
+        const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        const data = await response.json();
+        const frames = [...(data?.radar?.past || []), ...(data?.radar?.nowcast || [])];
+        setRadarTimestamp(frames.at(-1)?.time || null);
+      } catch {
+        setRadarTimestamp(null);
+      }
+    };
+    loadRadarFrame();
   }, []);
 
   const loadClimateTrends = async () => {
@@ -241,34 +167,39 @@ export const LiveWeatherTab = () => {
         </div>
       </div>
 
-      {/* 3. 3D GLOBE & HIGH-RES GIS MAP (TWO COLUMNS) */}
+      {/* 3. LIVE FARM LOCATION & PRECIPITATION RADAR (TWO COLUMNS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* 3D Earth Globe (6 Cols) */}
+        {/* Selected Farm Satellite View (6 Cols) */}
         <div className="lg:col-span-6 glass-panel rounded-2xl p-5 border border-white/10 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <Globe className="w-4 h-4 text-blue-400" /> Interactive 3D Earth Globe & Weather Satellite Orbit
+              <Globe className="w-4 h-4 text-blue-400" /> Farm Satellite View
             </h3>
           </div>
 
-          <InteractiveEarthGlobe activeLayer={activeLayer} />
+          <div className="h-80 overflow-hidden rounded-2xl border border-white/10 relative">
+            <FarmMap location={selectedLocation} satellite />
+            <div className="absolute top-3 left-3 z-[500] bg-black/80 px-3 py-1.5 rounded-xl text-[10px] text-emerald-300 font-mono border border-emerald-500/40">
+              Selected location: <strong className="text-slate-100">{selectedLocation.name}</strong>
+            </div>
+          </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-300">
-            <span>Sat Resolution: <strong className="text-emerald-400">100m Meteorological Radar</strong></span>
-            <span>Cloud Cover: <strong className="text-cyan-300">{curr.cloud_cover_pct || 20}% Live Scan</strong></span>
+            <span>Imagery: <strong className="text-emerald-400">Esri World Imagery</strong></span>
+            <span>Coordinates: <strong className="text-cyan-300">{Number(selectedLocation.lat).toFixed(4)}°, {Number(selectedLocation.lon).toFixed(4)}°</strong></span>
           </div>
         </div>
 
-        {/* High-Res GIS Layer Map (6 Cols) */}
+        {/* Live precipitation map (6 Cols) */}
         <div className="lg:col-span-6 glass-panel rounded-2xl p-5 border border-white/10 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-400" /> High-Resolution GIS Meteorological Map Layer
+              <Layers className="w-4 h-4 text-emerald-400" /> Live Precipitation Radar
             </h3>
 
             <div className="flex gap-1 overflow-x-auto custom-scrollbar">
-              {['Radar', 'Rain', 'Wind', 'Temp', 'Humidity', 'Pressure'].map(lyr => (
+              {['Radar', 'Rain'].map(lyr => (
                 <button
                   key={lyr}
                   onClick={() => setActiveLayer(lyr)}
@@ -282,17 +213,13 @@ export const LiveWeatherTab = () => {
             </div>
           </div>
 
-          <div className="h-80 rounded-2xl overflow-hidden border border-white/10 relative bg-black">
-            <img 
-              src="https://images.unsplash.com/photo-1524169358666-79f22534bc6e?auto=format&fit=crop&q=80&w=1000" 
-              alt="Weather Map" 
-              className="w-full h-full object-cover opacity-85" 
-            />
-            <div className="absolute top-3 left-3 bg-black/80 px-3 py-1.5 rounded-xl text-[10px] text-emerald-300 font-bold border border-emerald-500/40">
-              Active Layer: {activeLayer} Overlay ({selectedLocation.name})
+          <div className="h-80 rounded-2xl overflow-hidden border border-white/10 relative bg-slate-950">
+            <FarmMap location={selectedLocation} radarTimestamp={radarTimestamp} />
+            <div className="absolute top-3 left-3 z-[500] bg-black/80 px-3 py-1.5 rounded-xl text-[10px] text-emerald-300 font-bold border border-emerald-500/40">
+              {radarTimestamp ? `${activeLayer} overlay — latest RainViewer frame` : 'Loading latest precipitation radar…'}
             </div>
-            <div className="absolute bottom-3 right-3 bg-black/80 px-3 py-1 rounded-xl text-[10px] text-slate-300 border border-white/10">
-              Wind Vector: {curr.wind_direction_deg || 45}° NE • {curr.wind_speed_kph || 12} km/h
+            <div className="absolute bottom-3 right-3 z-[500] bg-black/80 px-3 py-1 rounded-xl text-[10px] text-slate-300 border border-white/10">
+              Rain intensity overlay • {selectedLocation.name}
             </div>
           </div>
         </div>

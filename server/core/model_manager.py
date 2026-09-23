@@ -33,7 +33,7 @@ class LocalModelManager:
             "speech_tts": ModelMetadata("microsoft/speecht5_tts", os.path.join(model_dir, "speecht5_tts"), "audio"),
         }
 
-    def check_system_ram((self) -> float:
+    def check_system_ram(self) -> float:
         ram_percent = psutil.virtual_memory().percent
         if ram_percent >= RAM_LIMIT_PERCENT:
             self.evict_inactive_models(force=True)

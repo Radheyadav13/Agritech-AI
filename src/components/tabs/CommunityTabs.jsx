@@ -24,7 +24,7 @@ export const CommunityTabs = ({ subTab }) => {
             {getInitials(user?.displayName || user?.username || 'AgriVerse')}
           </div>
           <div>
-            <h4 className="font-bold text-sm text-slate-100">{user?.displayName || 'Sathya Seelan'}</h4>
+            <h4 className="font-bold text-sm text-slate-100">{user?.displayName || 'Farmer'}</h4>
             <p className="text-[11px] text-slate-400">{user?.email || 'farmer@agriverse.ai'} • {user?.provider || 'Username & Password Auth'}</p>
           </div>
         </div>

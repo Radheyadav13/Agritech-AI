@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import {
   ShieldAlert, Globe, Activity, Search, AlertTriangle, CheckCircle2, FileText, Download,
   TrendingUp, DollarSign, Send, RefreshCw, Cpu, Layers, MapPin, Eye, Filter, Zap, BookOpen, Clock, ShieldCheck
@@ -105,6 +106,60 @@ const GlobalOutbreakGlobe = ({ outbreaks, selectedCountry }) => {
       </div>
       <div className="absolute bottom-3 right-3 bg-black/80 px-3 py-1 rounded-xl text-[10px] text-slate-400 font-mono border border-white/10">
         FAO / ICAR / USDA Live Feed Connection Active
+      </div>
+    </div>
+  );
+};
+
+const OutbreakMap = ({ outbreaks, selectedCountry, selectedOutbreakId, onSelect }) => {
+  const visibleOutbreaks = selectedCountry === 'ALL'
+    ? outbreaks
+    : outbreaks.filter((outbreak) => outbreak.country === selectedCountry);
+  const center = selectedCountry === 'ALL'
+    ? [20, 10]
+    : visibleOutbreaks.length
+      ? [visibleOutbreaks[0].latitude, visibleOutbreaks[0].longitude]
+      : [20, 10];
+  const zoom = selectedCountry === 'ALL' ? 2 : 5;
+
+  return (
+    <div className="relative h-80 w-full overflow-hidden rounded-2xl border border-rose-500/30 bg-black/60">
+      <MapContainer key={selectedCountry} center={center} zoom={zoom} scrollWheelZoom className="h-full w-full" aria-label="Reported crop disease locations map">
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors"
+        />
+        {visibleOutbreaks.map((outbreak) => {
+          const selected = outbreak.id === selectedOutbreakId;
+          const critical = outbreak.severity_level >= 5;
+          return (
+            <CircleMarker
+              key={outbreak.id}
+              center={[outbreak.latitude, outbreak.longitude]}
+              radius={selected ? 12 : 8}
+              eventHandlers={{ click: () => onSelect(outbreak.id) }}
+              pathOptions={{
+                color: selected ? '#fbbf24' : '#fff',
+                fillColor: critical ? '#dc2626' : '#f43f5e',
+                fillOpacity: 0.85,
+                weight: selected ? 3 : 1.5,
+              }}
+            >
+              <Popup>
+                <strong>{outbreak.disease}</strong><br />
+                {outbreak.region}, {outbreak.country}<br />
+                Severity: {outbreak.severity}<br />
+                Report date: {outbreak.date_reported}
+              </Popup>
+            </CircleMarker>
+          );
+        })}
+      </MapContainer>
+      <div className="absolute top-3 left-3 z-[500] bg-black/85 px-3 py-1.5 rounded-xl text-[10px] text-rose-200 font-mono border border-rose-500/40">
+        Reported locations in the bundled surveillance dataset • Filter: <strong className="text-amber-300">{selectedCountry}</strong>
+      </div>
+      <div className="absolute bottom-3 right-3 z-[500] bg-black/85 px-3 py-1 rounded-xl text-[10px] text-slate-300 font-mono border border-white/10">
+        {visibleOutbreaks.length} plotted report{visibleOutbreaks.length === 1 ? '' : 's'} • Click a marker for details
       </div>
     </div>
   );
@@ -299,7 +354,7 @@ export const DiseaseDetectionTab = () => {
         <div className="glass-panel rounded-2xl p-4 border border-amber-500/30 bg-amber-950/20 text-center space-y-1">
           <span className="text-[10px] text-slate-400 block">New Outbreaks Today</span>
           <strong className="text-2xl font-extrabold text-amber-400">{stats.new_outbreaks_today || 1}</strong>
-          <span className="text-[10px] text-amber-300 block font-sans">Updated Just Now</span>
+          <span className="text-[10px] text-amber-300 block font-sans">Bundled sample data</span>
         </div>
 
         <div className="glass-panel rounded-2xl p-4 border border-cyan-500/30 bg-cyan-950/20 text-center space-y-1">
@@ -332,7 +387,7 @@ export const DiseaseDetectionTab = () => {
         <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Globe className="w-4 h-4 text-rose-400" /> Interactive Global Pathogen Map
+              <Globe className="w-4 h-4 text-rose-400" /> Reported Crop Disease Locations
             </h2>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-slate-400">Country:</span>
@@ -351,7 +406,12 @@ export const DiseaseDetectionTab = () => {
               </select>
             </div>
           </div>
-          <GlobalOutbreakGlobe outbreaks={outbreaks} selectedCountry={selectedCountry} />
+          <OutbreakMap
+            outbreaks={outbreaks}
+            selectedCountry={selectedCountry}
+            selectedOutbreakId={selectedOutbreakId}
+            onSelect={setSelectedOutbreakId}
+          />
         </div>
 
         {/* AI Spread Predictor Card */}
@@ -359,10 +419,10 @@ export const DiseaseDetectionTab = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <span className="font-bold text-slate-200 text-xs flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-400" /> AI Climate Spread Vector Predictor
+                <Zap className="w-4 h-4 text-amber-400" /> Illustrative Climate Risk Estimate
               </span>
               <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                Confidence: {spreadPrediction?.confidence_pct || 91.5}%
+                Model score: {spreadPrediction?.confidence_pct || 91.5}%
               </span>
             </div>
 
@@ -415,7 +475,7 @@ export const DiseaseDetectionTab = () => {
         <div className="lg:col-span-7 space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-rose-400" /> Live Global Disease Outbreak Feed ({filteredOutbreaks.length})
+              <Activity className="w-4 h-4 text-rose-400" /> Bundled Disease Surveillance Dataset ({filteredOutbreaks.length})
             </h3>
             <div className="relative w-full sm:w-64">
               <input 

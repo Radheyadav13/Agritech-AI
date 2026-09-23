@@ -80,7 +80,7 @@ export const FALLBACK_VERIFIED_SCHEMES = [
 export const FALLBACK_FARMER_APPLICATIONS = [
   {
     application_id: 'APP-2026-001',
-    farmer_name: 'Sathya Seelan',
+    farmer_name: 'Farmer',
     scheme_id: 'SCH-CENTRAL-01',
     scheme_name: 'PM-KISAN Samman Nidhi Yojana',
     category: 'Direct Income Support',
@@ -95,7 +95,7 @@ export const FALLBACK_FARMER_APPLICATIONS = [
   },
   {
     application_id: 'APP-2026-002',
-    farmer_name: 'Sathya Seelan',
+    farmer_name: 'Farmer',
     scheme_id: 'SCH-CENTRAL-03',
     scheme_name: 'SMAM Power Tiller Subsidy',
     category: 'Equipment Machinery Subsidy',
@@ -215,7 +215,7 @@ export const verifyFarmerDocumentOCR = async (docType, fileName) => {
       document_type: docType,
       file_name: fileName,
       extracted_fields: {
-        farmer_name: 'Sathya Seelan',
+        farmer_name: 'Farmer',
         survey_number: 'Patta #412/A-09',
         aadhaar_masked: 'XXXX-XXXX-8912',
         bank_ifsc: 'SBIN0001425',

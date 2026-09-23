@@ -80,7 +80,7 @@ export default function GovernmentSchemesTab() {
     setLoading(true);
     try {
       const appData = {
-        farmer_name: 'Sathya Seelan',
+        farmer_name: 'Farmer',
         scheme_id: scheme.scheme_id,
         scheme_name: scheme.name,
         category: scheme.category,
@@ -166,7 +166,7 @@ export default function GovernmentSchemesTab() {
         ====================================================
         AGRIVERSE AI • OFFICIAL GOVERNMENT SCHEME STATEMENT
         ====================================================
-        Farmer Name: Sathya Seelan
+        Farmer Name: Farmer
         District/State: Vellore, Tamil Nadu
         Land Holding: 2.5 Acres (Small & Marginal)
         Date: ${new Date().toLocaleDateString()}

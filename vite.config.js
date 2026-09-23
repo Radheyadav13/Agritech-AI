@@ -12,17 +12,17 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api/ollama': {
-        target: 'http://localhost:11434',
+        target: 'http://127.0.0.1:11434',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ollama/, '')
       },
       '/api/backend': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/backend/, '')
       },
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true
       }
     }
